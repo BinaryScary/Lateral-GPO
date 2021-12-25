@@ -22,7 +22,10 @@ Function Lateral-RDP {
         [String]$Username,
 
         [Parameter(Mandatory=$true, HelpMessage="The target computer the GPO is applied to.")]
-        [String]$ComputerName 
+        [String]$ComputerName,
+
+        [Parameter(Mandatory=$false, HelpMessage="Domain Controller to pull domain information from.")]
+        [String]$Server
     )
 
     # check if username and computername exist
@@ -42,7 +45,10 @@ Function Lateral-RDP {
         return
     }
 
-    $Domain = Get-ADDomain
+    $Params = @{
+    }
+    if ($Server) { $Params.Server = $Server }
+    $Domain = Get-ADDomain @Params
     $Forest = $Domain.Forest
     $DC = Get-ADDomainController
     $HostName = $DC.HostName
@@ -84,7 +90,7 @@ Function Lateral-RDP {
     Set-GPPermission -Name $GPOName -TargetName "Authenticated Users" -targettype group -permissionlevel None | Out-Null
     Set-GPPermissions -Name $GPOName -PermissionLevel GpoApply -TargetName $ComputerName -targettype computer | Out-Null
 
-    Write-Verbose "Configuring Restricted Groups"
+    Write-Verbose "Configuring Restricted Groups..."
 
     # add gPCMachineExtensionNames Restricted Groups extension
     # Restricted Group Clientside extension: {827D319E-6EAC-11D2-A4EA-00C04F79F83A}
